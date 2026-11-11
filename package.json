@@ -1,0 +1,8 @@
+{
+  "name": "the-thirty-list",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Thirty List: static Amazon Associates site for tech holiday gifts under $30",
+  "scripts": { "build": "node build.js" },
+  "engines": { "node": ">=18" }
+}
