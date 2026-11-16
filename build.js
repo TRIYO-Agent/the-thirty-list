@@ -78,6 +78,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" hr
 <meta property="og:image" content="${cfg.baseUrl}/img/airtag.webp">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#14532d">
+<meta name="p:domain_verify" content="a7a8d27a7f784c9b9b20487982c3f153"/>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/styles.css?v=2">
 ${jsonLd || ""}
