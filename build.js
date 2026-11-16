@@ -13,6 +13,7 @@ const REL = "sponsored nofollow noopener";
 const CATEGORIES = ["Audio", "Charging", "Smart Home", "Everyday Carry", "Desk", "TV"];
 const BANDS = ["Under $15", "Under $20", "Under $30", "Sale pick"];
 const BAND_ORDER = Object.fromEntries(BANDS.map((b, i) => [b, i]));
+const byId = Object.fromEntries(products.map((p) => [p.id, p]));
 
 for (const p of products) {
   if (!/^[A-Z0-9]{10}$/.test(p.asin)) throw new Error("Bad ASIN for " + p.id);
@@ -24,7 +25,7 @@ for (const p of products) {
 const amazonUrl = (asin) => `${cfg.amazonDomain}/dp/${encodeURIComponent(asin)}?tag=${encodeURIComponent(cfg.amazonTag)}`;
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-function card(p, i) {
+function card(p, i, why) {
   const href = amazonUrl(p.asin);
   return `<li class="gift" data-cat="${esc(slug(p.category))}" data-band="${esc(slug(p.band))}" data-order="${i}" data-bandorder="${BAND_ORDER[p.band]}">
   <a class="gift-img" href="${esc(href)}" rel="${REL}" target="_blank" tabindex="-1" aria-hidden="true"><img src="/img/${p.img}.webp" srcset="/img/${p.img}-sm.webp 480w, /img/${p.img}.webp 1024w" sizes="(max-width: 640px) 100vw, 360px" width="1024" height="768" alt="" loading="${i < 3 ? "eager" : "lazy"}" decoding="async"></a>
@@ -32,18 +33,36 @@ function card(p, i) {
     <div class="chips"><span class="chip cat">${esc(p.category)}</span><span class="chip band${p.band === "Sale pick" ? " sale" : ""}">${esc(p.band)}</span></div>
     <h3>${esc(p.name)}</h3>
     <p class="who">${esc(p.who)}</p>
-    <p>${esc(p.note)}</p>
+    <p>${esc(why || p.note)}</p>
     <a class="btn" href="${esc(href)}" rel="${REL}" target="_blank">Check price on Amazon<span class="sr-only"> for ${esc(p.name)} (opens in a new tab)</span></a>
     <p class="imgnote">Illustrative image, not the actual product.</p>
   </div>
 </li>`;
 }
 
-const nav = [["/", "Gifts"], ["/about/", "About"], ["/affiliate-disclosure/", "Disclosure"]];
+const nav = [["/", "Gifts"], ["/guides/", "Guides"], ["/about/", "About"], ["/affiliate-disclosure/", "Disclosure"]];
 
-function layout({ title, description, urlPath, body, noindex }) {
+function itemListLd({ name, description, url, items }) {
+  return `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    description,
+    url,
+    numberOfItems: items.length,
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      url: it.url,
+    })),
+  })}</script>`;
+}
+
+function layout({ title, description, urlPath, body, noindex, jsonLd, ogType }) {
   const fullTitle = urlPath === "/" ? `${cfg.siteName}: ${cfg.tagline}` : `${title} | ${cfg.siteName}`;
   const canonical = cfg.baseUrl + urlPath;
+  const navCurrent = (h) => h === urlPath || (h === "/guides/" && urlPath.startsWith("/guides/"));
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -54,13 +73,14 @@ function layout({ title, description, urlPath, body, noindex }) {
 ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${esc(canonical)}">`}
 <meta property="og:title" content="${esc(fullTitle)}">
 <meta property="og:description" content="${esc(description)}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="${esc(ogType || "website")}">
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:image" content="${cfg.baseUrl}/img/airtag.webp">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#14532d">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/styles.css?v=1">
+<link rel="stylesheet" href="/styles.css?v=2">
+${jsonLd || ""}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -68,7 +88,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" hr
 <header class="site-header">
   <div class="wrap header-inner">
     <a class="brand" href="/"><span class="badge" aria-hidden="true">30</span><span>${esc(cfg.siteName)}</span></a>
-    <nav aria-label="Main"><ul>${nav.map(([h, l]) => `<li><a href="${h}"${h === urlPath ? ' aria-current="page"' : ""}>${l}</a></li>`).join("")}</ul></nav>
+    <nav aria-label="Main"><ul>${nav.map(([h, l]) => `<li><a href="${h}"${navCurrent(h) ? ' aria-current="page"' : ""}>${l}</a></li>`).join("")}</ul></nav>
   </div>
 </header>
 <main id="main">
@@ -79,7 +99,7 @@ ${body}
     <p><strong>Affiliate disclosure:</strong> ${esc(cfg.disclosure)} It never changes which gifts make the list. <a href="/affiliate-disclosure/">Full disclosure</a>.</p>
     <p>${esc(cfg.priceNote)} Product images on this site are illustrations, not photos of the actual products.</p>
     <p class="muted">${esc(cfg.siteName)} is an independent site and is not affiliated with, endorsed by or sponsored by Amazon or any brand listed here. Brand names are trademarks of their owners.</p>
-    <ul class="footer-links"><li><a href="/">Gifts</a></li><li><a href="/about/">About</a></li><li><a href="/affiliate-disclosure/">Affiliate Disclosure</a></li><li><a href="/privacy/">Privacy Policy</a></li></ul>
+    <ul class="footer-links"><li><a href="/">Gifts</a></li><li><a href="/guides/">Gift guides</a></li><li><a href="/about/">About</a></li><li><a href="/affiliate-disclosure/">Affiliate Disclosure</a></li><li><a href="/privacy/">Privacy Policy</a></li></ul>
     <p class="muted">&copy; ${new Date(cfg.published).getFullYear()} ${esc(cfg.siteName)}</p>
   </div>
 </footer>
@@ -94,6 +114,16 @@ function write(urlPath, html) {
   fs.writeFileSync(file, html);
 }
 
+const guides = fs.readdirSync(path.join(__dirname, "content/guides")).filter((f) => f.endsWith(".js")).map((f) => require(path.join(__dirname, "content/guides", f))).sort((a, b) => (a.order || 99) - (b.order || 99));
+for (const g of guides) {
+  if (!g.slug || !g.title || !g.description || !g.intro || !Array.isArray(g.picks) || !g.picks.length) throw new Error("Incomplete guide: " + (g.slug || "unknown"));
+  for (const pick of g.picks) {
+    if (!byId[pick.id]) throw new Error("Unknown product " + pick.id + " in guide " + g.slug);
+  }
+}
+
+const guideCard = (g) => `<li><a href="/guides/${g.slug}/"><h3>${esc(g.title)}</h3><p>${esc(g.description)}</p></a></li>`;
+
 const urls = [];
 
 // Home
@@ -105,7 +135,13 @@ const home = `
     <h1>Tech gifts under $30 that people actually want.</h1>
     <p class="lede">${products.length} hand-picked gadgets from brands people trust, chosen because shoppers are really buying them this season. No filler, no junk drawer gifts.</p>
     <a class="btn btn-light" href="#gifts">See the gifts</a>
+    <a class="btn btn-light" href="/guides/">Shop by person</a>
   </div>
+</section>
+<section class="wrap guides-tease" aria-labelledby="guides-h">
+  <h2 id="guides-h">Shop by person or occasion</h2>
+  <p>Short lists pulled from the same ${products.length} gifts, written for the person you are shopping for.</p>
+  <ul class="guide-cards">${guides.map(guideCard).join("")}</ul>
 </section>
 <section id="gifts" class="wrap gifts" aria-labelledby="gifts-h">
   <div class="gifts-head">
@@ -124,14 +160,64 @@ ${products.map(card).join("\n")}
   <p class="bandnote"><strong>About the price bands:</strong> bands are general guides based on each item's usual price, not live prices. "Sale pick" means the item usually costs more than $30 and only dips under it during sales. ${esc(cfg.priceNote)}</p>
 </section>`;
 write("/", layout({ title: cfg.siteName, description: `${products.length} tech holiday gifts under $30, from earbuds and chargers to smart plugs and stocking stuffers. Hand-picked gadgets people actually want.`, urlPath: "/", body: home }));
-urls.push("/");
+urls.push({ path: "/", lastmod: cfg.published });
+
+// Guides index
+const indexBody = `
+<div class="wrap guide">
+  <p class="crumbs"><a href="/">Home</a> › Gift guides</p>
+  <h1>Holiday gift guides under $30</h1>
+  <p class="disclosure-inline">${esc(cfg.disclosure)} ${esc(cfg.priceNote)}</p>
+  <p class="intro">Short, honest lists for the person or occasion you are shopping for, drawn from the same ${products.length} gifts on <a href="/">The Thirty List</a>. Sale picks are flagged, because those are not always under $30.</p>
+  <ul class="guide-cards">${guides.map(guideCard).join("")}</ul>
+</div>`;
+write("/guides/", layout({
+  title: "Holiday Gift Guides Under $30",
+  description: "Tech gift guides under $30 for dad, college students, stocking stuffers, and Secret Santa or white elephant, all pulled from The Thirty List.",
+  urlPath: "/guides/",
+  body: indexBody,
+}));
+urls.push({ path: "/guides/", lastmod: "2026-11-16" });
+
+// Guide pages
+for (const g of guides) {
+  const urlPath = `/guides/${g.slug}/`;
+  const picks = g.picks.map((pick) => ({ ...byId[pick.id], why: pick.why }));
+  const others = guides.filter((x) => x.slug !== g.slug);
+  const hasSale = picks.some((p) => p.band === "Sale pick");
+  const saleNote = hasSale ? `<p class="bandnote"><strong>About sale picks:</strong> items marked "Sale pick" usually cost more than $30 and only dip under it during sales. Check the current price before you buy.</p>` : "";
+  const body = `
+<div class="wrap guide">
+  <p class="crumbs"><a href="/">Home</a> › <a href="/guides/">Gift guides</a> › ${esc(g.title)}</p>
+  <h1>${esc(g.title)}</h1>
+  <p class="disclosure-inline">${esc(cfg.disclosure)} ${esc(cfg.priceNote)}</p>
+  ${g.intro}
+  <h2>The picks</h2>
+  <ul class="grid">
+${picks.map((p, i) => card(p, i, p.why)).join("\n")}
+  </ul>
+  ${saleNote}
+  <p class="bandnote">${esc(cfg.priceNote)} Bands are general guides based on each item's usual price, not live prices.</p>
+  <h2>More gift guides</h2>
+  <ul class="guide-cards">${others.map(guideCard).join("")}</ul>
+  <p><a class="btn" href="/#gifts">See the full list of ${products.length} gifts</a></p>
+</div>`;
+  const jsonLd = itemListLd({
+    name: g.title,
+    description: g.description,
+    url: cfg.baseUrl + urlPath,
+    items: picks.map((p) => ({ name: p.name, url: amazonUrl(p.asin) })),
+  });
+  write(urlPath, layout({ title: g.title, description: g.description, urlPath, body, jsonLd, ogType: "article" }));
+  urls.push({ path: urlPath, lastmod: g.date || "2026-11-16" });
+}
 
 // Static pages
 for (const f of fs.readdirSync(path.join(__dirname, "content/pages")).filter((x) => x.endsWith(".js"))) {
   const pg = require(path.join(__dirname, "content/pages", f));
   const body = `<div class="wrap page"><p class="disclosure-inline">${esc(cfg.disclosure)}</p>${pg.body}</div>`;
   write(pg.path, layout({ title: pg.title, description: pg.description, urlPath: pg.path, body, noindex: pg.noindex }));
-  if (!pg.noindex) urls.push(pg.path);
+  if (!pg.noindex) urls.push({ path: pg.path, lastmod: cfg.published });
 }
 
 // Static assets
@@ -141,6 +227,6 @@ for (const f of fs.readdirSync(path.join(__dirname, "static"))) {
   else fs.copyFileSync(src, path.join(OUT, f));
 }
 
-fs.writeFileSync(path.join(OUT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${cfg.baseUrl}${u}</loc><lastmod>${cfg.published}</lastmod></url>`).join("\n")}\n</urlset>\n`);
+fs.writeFileSync(path.join(OUT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${cfg.baseUrl}${u.path}</loc><lastmod>${u.lastmod}</lastmod></url>`).join("\n")}\n</urlset>\n`);
 fs.writeFileSync(path.join(OUT, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${cfg.baseUrl}/sitemap.xml\n`);
-console.log(`Built ${urls.length} indexed pages with ${products.length} gifts into dist/`);
+console.log(`Built ${urls.length} indexed pages with ${products.length} gifts and ${guides.length} guides into dist/`);

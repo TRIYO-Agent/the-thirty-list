@@ -14,6 +14,7 @@ module.exports = {
 </ul>
 <h2>What we do not do</h2>
 <p>We have not lab-tested these products, and we do not copy star ratings or prices onto this site because they change constantly. The images here are illustrations, not photos of the actual products. Always check the product page on Amazon for current price, details and reviews.</p>
+<p>You can also start from one of our <a href="/guides/">holiday gift guides</a>, organized by person or occasion.</p>
 <p><a class="btn" href="/#gifts">Browse the gifts</a></p>
 `,
 };
