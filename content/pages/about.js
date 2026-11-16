@@ -4,7 +4,7 @@ module.exports = {
   description: "Why The Thirty List exists and how we pick tech gifts under $30.",
   body: `
 <h1>About The Thirty List</h1>
-<p>Good tech gifts do not have to be expensive. They just have to be useful. The Thirty List is a short, hand-picked list of gadgets that work as gifts for nearly anyone, at prices that fit a stocking, a coworker swap or a "just because."</p>
+<p>Good tech gifts do not have to be expensive. They just have to be useful. The Thirty List is a hand-picked list of gadgets that work as gifts for nearly anyone, at prices that fit a stocking, a coworker swap or a "just because."</p>
 <h2>How we pick</h2>
 <ul>
   <li><strong>Real demand.</strong> We look for items shoppers are actually buying this season, using public best seller lists and recent buying activity, plus well-known gift guides.</li>

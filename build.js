@@ -10,23 +10,29 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const REL = "sponsored nofollow noopener";
-const CATEGORIES = ["Audio", "Charging", "Smart Home", "Everyday Carry", "Desk", "TV"];
+const CATEGORIES = ["Audio", "Charging", "Smart Home", "Everyday Carry", "Desk", "TV", "Gaming", "Travel", "Kitchen", "Fun Gadgets"];
 const BANDS = ["Under $15", "Under $20", "Under $30", "Sale pick"];
 const BAND_ORDER = Object.fromEntries(BANDS.map((b, i) => [b, i]));
 const byId = Object.fromEntries(products.map((p) => [p.id, p]));
 
 for (const p of products) {
-  if (!/^[A-Z0-9]{10}$/.test(p.asin)) throw new Error("Bad ASIN for " + p.id);
+  if (p.asin) {
+    if (!/^[A-Z0-9]{10}$/.test(p.asin)) throw new Error("Bad ASIN for " + p.id);
+  } else if (!p.search) {
+    throw new Error("Need asin or search for " + p.id);
+  }
   if (!CATEGORIES.includes(p.category)) throw new Error("Bad category for " + p.id);
   if (!BANDS.includes(p.band)) throw new Error("Bad band for " + p.id);
   if (!fs.existsSync(path.join(__dirname, "static/img", p.img + ".webp"))) throw new Error("Missing image for " + p.id);
 }
 
 const amazonUrl = (asin) => `${cfg.amazonDomain}/dp/${encodeURIComponent(asin)}?tag=${encodeURIComponent(cfg.amazonTag)}`;
+const searchUrl = (q) => `${cfg.amazonDomain}/s?k=${encodeURIComponent(q)}&tag=${encodeURIComponent(cfg.amazonTag)}`;
+const productUrl = (p) => p.asin ? amazonUrl(p.asin) : searchUrl(p.search);
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 function card(p, i, why) {
-  const href = amazonUrl(p.asin);
+  const href = productUrl(p);
   return `<li class="gift" data-cat="${esc(slug(p.category))}" data-band="${esc(slug(p.band))}" data-order="${i}" data-bandorder="${BAND_ORDER[p.band]}">
   <a class="gift-img" href="${esc(href)}" rel="${REL}" target="_blank" tabindex="-1" aria-hidden="true"><img src="/img/${p.img}.webp" srcset="/img/${p.img}-sm.webp 480w, /img/${p.img}.webp 1024w" sizes="(max-width: 640px) 100vw, 360px" width="1024" height="768" alt="" loading="${i < 3 ? "eager" : "lazy"}" decoding="async"></a>
   <div class="gift-body">
@@ -161,7 +167,7 @@ ${products.map(card).join("\n")}
   <p class="bandnote"><strong>About the price bands:</strong> bands are general guides based on each item's usual price, not live prices. "Sale pick" means the item usually costs more than $30 and only dips under it during sales. ${esc(cfg.priceNote)}</p>
 </section>`;
 write("/", layout({ title: cfg.siteName, description: `${products.length} tech holiday gifts under $30, from earbuds and chargers to smart plugs and stocking stuffers. Hand-picked gadgets people actually want.`, urlPath: "/", body: home }));
-urls.push({ path: "/", lastmod: cfg.published });
+urls.push({ path: "/", lastmod: "2026-11-16" });
 
 // Guides index
 const indexBody = `
@@ -207,7 +213,7 @@ ${picks.map((p, i) => card(p, i, p.why)).join("\n")}
     name: g.title,
     description: g.description,
     url: cfg.baseUrl + urlPath,
-    items: picks.map((p) => ({ name: p.name, url: amazonUrl(p.asin) })),
+    items: picks.map((p) => ({ name: p.name, url: productUrl(p) })),
   });
   write(urlPath, layout({ title: g.title, description: g.description, urlPath, body, jsonLd, ogType: "article" }));
   urls.push({ path: urlPath, lastmod: g.date || "2026-11-16" });
