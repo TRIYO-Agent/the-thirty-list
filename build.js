@@ -167,7 +167,7 @@ ${products.map(card).join("\n")}
   <p class="bandnote"><strong>About the price bands:</strong> bands are general guides based on each item's usual price, not live prices. "Sale pick" means the item usually costs more than $30 and only dips under it during sales. ${esc(cfg.priceNote)}</p>
 </section>`;
 write("/", layout({ title: cfg.siteName, description: `${products.length} tech holiday gifts under $30, from earbuds and chargers to smart plugs and stocking stuffers. Hand-picked gadgets people actually want.`, urlPath: "/", body: home }));
-urls.push({ path: "/", lastmod: "2026-11-16" });
+urls.push({ path: "/", lastmod: "2026-11-20" });
 
 // Guides index
 const indexBody = `
@@ -180,11 +180,11 @@ const indexBody = `
 </div>`;
 write("/guides/", layout({
   title: "Holiday Gift Guides Under $30",
-  description: "Tech gift guides under $30 for dad, college students, stocking stuffers, and Secret Santa or white elephant, all pulled from The Thirty List.",
+  description: "Tech gift guides under $30 for dad, college students, travelers, movie night, stocking stuffers, and Secret Santa or white elephant, all pulled from The Thirty List.",
   urlPath: "/guides/",
   body: indexBody,
 }));
-urls.push({ path: "/guides/", lastmod: "2026-11-16" });
+urls.push({ path: "/guides/", lastmod: "2026-11-20" });
 
 // Guide pages
 for (const g of guides) {
